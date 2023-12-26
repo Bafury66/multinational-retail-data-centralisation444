@@ -12,12 +12,14 @@ class DataCleaning:
 
     '''
     def __init__(self):
-        import database_utils
-        util_connector = database_utils.DatabaseConnector()
-        self.engine = util_connector.init_db_engine()
-        self.source_table = util_connector.list_db_tables()
+        # import database_utils
+        # util_connector = database_utils.DatabaseConnector()
+        # self.engine = util_connector.init_db_engine()
+        # self.source_table = util_connector.list_db_tables()
+        #self.__init__
+        pass
     
-    def clean_user_data(): ##==== This function needs to be changed, don't need line 22-27, function take user data frame as argument ===
+    def clean_user_data(self, user_data): ##==== This function needs to be changed, don't need line 22-27, function take user data frame as argument ===
         import pandas as pd
         import database_utils , data_extraction
         util_connector = database_utils.DatabaseConnector()
@@ -79,43 +81,45 @@ class DataCleaning:
         #check if email duplicate
         #check if address begin with 0
         return user_data
-    
-    def clean_card_data():##==== This function needs to be changed, don't need line 85-91, function take card data frame as argument ===
+    @staticmethod
+    def clean_card_data(card_details):##==== This function needs to be changed, don't need line 85-91, function take card data frame as argument ===
         import pandas as pd
-        import database_utils , data_extraction
-        pdf_link = "https://data-handling-public.s3.eu-west-1.amazonaws.com/card_details.pdf"
-        util_connector = database_utils.DatabaseConnector()
-        source_table = util_connector.list_db_tables()
-        engine = util_connector.init_db_engine()
-        Connector = data_extraction.DataExtractor(engine, source_table)
-        card_details = Connector.retrieve_pdf_data(pdf_link)
+        # import database_utils , data_extraction
+        # pdf_link = "https://data-handling-public.s3.eu-west-1.amazonaws.com/card_details.pdf"
+        # util_connector = database_utils.DatabaseConnector()
+        # source_table = util_connector.list_db_tables()
+        # engine = util_connector.init_db_engine()
+        # Connector = data_extraction.DataExtractor(engine, source_table)
+        # card_details = Connector.retrieve_pdf_data(pdf_link)
         #Convert data frame to string type
         card_details = card_details.astype("string")
         #Convert date_payment_confirmed to datetime64
         card_details['date_payment_confirmed'] = pd.to_datetime(card_details['date_payment_confirmed'], format = 'mixed', errors='coerce')
-        #For card_number column, replace "?" with "" (remove all ?)
-        card_details.loc[ :, 'card_number'] = card_details['card_number'].replace({r'\?': ''}, regex=True)
+        #For card_number column, remove all ?)
+        #card_details.loc[ :, 'card_number'] = card_details['card_number'].replace({r'\?': ''}, regex=True)
+        card_details["card_number"] = card_details["card_number"].str.extract('(\d+)')
         #For card_number column, drop all those contains non-numeric cells
         card_details = card_details.drop(card_details[card_details["card_number"].str.isnumeric() == False].index)       
         #drop all NULL values
         card_details = card_details.dropna()
         return card_details
     
-    def clean_store_data():##==== This function needs to be changed, don't need line 106-115, function take store data frame as argument ===
+    def clean_store_data(store_df):##==== This function needs to be changed, don't need line 106-115, function take store data frame as argument ===
         import pandas as pd
-        import data_extraction, database_utils
-        util_connector = database_utils.DatabaseConnector()
-        source_table = util_connector.list_db_tables()
-        engine = util_connector.init_db_engine()
-        extract_connector = data_extraction.DataExtractor(engine, source_table)
-        store_number_endpoint = 'https://aqj7u5id95.execute-api.eu-west-1.amazonaws.com/prod/number_stores'
-        headers = {"x-api-key" : "yFBQbwXe9J3sd6zWVAMrK6lcxxr0q1lr2PT6DDMX"}
-        number_stores = extract_connector.list_number_of_stores(store_number_endpoint, headers)
-        retrieve_store_endpoint = 'https://aqj7u5id95.execute-api.eu-west-1.amazonaws.com/prod/store_details/'+str(number_stores)
-        store_data = extract_connector.retrieve_stores_data(retrieve_store_endpoint, headers)
-        store_details = pd.DataFrame(store_data)
+        # import data_extraction, database_utils
+        # util_connector = database_utils.DatabaseConnector()
+        # source_table = util_connector.list_db_tables()
+        # engine = util_connector.init_db_engine()
+        # extract_connector = data_extraction.DataExtractor(engine, source_table)
+        # store_number_endpoint = 'https://aqj7u5id95.execute-api.eu-west-1.amazonaws.com/prod/number_stores'
+        # headers = {"x-api-key" : "yFBQbwXe9J3sd6zWVAMrK6lcxxr0q1lr2PT6DDMX"}
+        # number_stores = extract_connector.list_number_of_stores(store_number_endpoint, headers)
+        # retrieve_store_endpoint = 'https://aqj7u5id95.execute-api.eu-west-1.amazonaws.com/prod/store_details/'+str(number_stores)
+        # store_data = extract_connector.retrieve_stores_data(retrieve_store_endpoint, headers)
+        # store_details = pd.DataFrame(store_data)
+        store_details = store_df
         store_code_length = 11
-        store_type_list = ["Local", "Super Store", "Mall Kiosk", "Outlet"]
+        store_type_list = ["Local", "Super Store", "Mall Kiosk", "Outlet", "Web Portal"]
         country_and_continent_mapping = {"GB" : "Europe" , "DE" : "Europe" , "US" : "America"}
         country_list = []
         continent_list = []
@@ -123,25 +127,24 @@ class DataCleaning:
             country_list.append(key)
             continent_list.append(value)
         continent_list = list(set(continent_list))
-        
         #Convert data frame to string type
         store_details = store_details.astype("string")
         #Convert opening_date to datetime64
         store_details['opening_date'] = pd.to_datetime(store_details['opening_date'], format = 'mixed', errors='coerce')
         #For longitude column, drop all those contains non-numeric cells and convert to float64
-        store_details = store_details.drop(store_details[store_details["longitude"].str.contains('[^0-9^\.]')].index)
-        store_details["longitude"] = store_details["longitude"].astype("float64")
+        #store_details = store_details.drop(store_details[store_details["longitude"].str.contains('[^{N/A}0-9\.]')].index)
+        #store_details["longitude"] = store_details["longitude"].astype("float64")
         #For latitude column, drop all those contains non-numeric cells and convert to float64
-        store_details = store_details.drop(store_details[store_details["latitude"].str.contains('[^0-9^\.\-]')].index)
-        store_details["latitude"] = store_details["latitude"].astype("float64")
+        #store_details = store_details.drop(store_details[store_details["latitude"].str.contains('[^{N/A}0-9\.\-]')].index)
+        #store_details["latitude"] = store_details["latitude"].astype("float64")
         
         #For locality column, drop all those contains numeric cells
         store_details = store_details.drop(store_details[store_details["locality"].str.contains('\d') == True].index)
                 
         #For store_code column, check if code format first 3 characters = first 2 characters of locality + "-", drop all not meeting requirement
-        store_details = store_details.drop(store_details[store_details['store_code'].str[:3] != store_details['locality'].str[:2].str.upper() + '-'].index)
+        #store_details = store_details.drop(store_details[store_details['store_code'].str[:3] != store_details['locality'].str[:2].str.upper() + '-'].index)
         #For store_code column, check if code length = 11, drop all not meeting requirement
-        store_details = store_details.drop(store_details[store_details['store_code'].str.len() != store_code_length].index)
+        #store_details = store_details.drop(store_details[store_details['store_code'].str.len() != store_code_length].index)
         #For staff_numbers, remove all none-digits
         store_details.loc[ :, 'staff_numbers'] = store_details['staff_numbers'].replace({r'\D': ''}, regex=True)
         #For store_type column, drop those not in the store_type_list
@@ -153,14 +156,14 @@ class DataCleaning:
         #For continent column, drop those not eligible
         store_details = store_details.drop(store_details[~store_details.continent.isin(continent_list)].index)
         #remove lat column and index column
-        store_details = store_details.drop('lat', axis=1)
+        #store_details = store_details.drop('lat', axis=1)
         store_details = store_details.drop("index", axis=1) 
-        #drop all NULL values
-        store_details = store_details.dropna()       
+        # #drop all NULL values
+        #store_details = store_details.dropna() # can't use this, this wipe out everything
 
         return store_details
     
-    def convert_product_weights(product_df):
+    def convert_product_weights(self, product_df):
         import pandas as pd
         product_df[["value", "weight_unit"]] = product_df["weight"].str.extract('(\d+\.\d+|\d+|\d+\s[x]\s\d+)(kg|g|ml|oz)', expand=True)
         product_df[["item_numbers", "item_weight"]] = product_df["value"].str.split(' x ', expand=True)
@@ -177,7 +180,7 @@ class DataCleaning:
         product_df = product_df.drop(["value", "item_numbers", "item_weight", "total_weight"], axis=1)
         return product_df
     
-    def clean_products_data(product_df):
+    def clean_products_data(self, product_df):
         import pandas as pd
         uuid_length = 36
         #Start from removed column, remove rows not in the available list

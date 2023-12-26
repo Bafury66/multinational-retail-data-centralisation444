@@ -48,7 +48,7 @@ class DataExtractor:
             print(f"Response Text: {response.text}")
 
     def retrieve_stores_data(self, retrieve_store_endpoint, headers):
-        import requests, json
+        import requests, pandas as pd
         
         string_length = len(retrieve_store_endpoint)
         for char in range(string_length-1, 0, -1):
@@ -76,7 +76,8 @@ class DataExtractor:
                 print(f"Response Text: {response.status_code}")
                 print(f"Response Text: {response.text}")
                 print('Not getting correct response from server..')
-        return store_data_list
+        store_df = pd.DataFrame(store_data_list)
+        return store_df
     
     def extract_from_s3(self, s3_address):
         import boto3, pandas as pd

@@ -1,3 +1,6 @@
 db_creds.yaml
 local_db_creds.yaml
 __pycache__
+store_api_creds.yaml
+test.ipynb
+test_card_details.ipynb

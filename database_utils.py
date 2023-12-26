@@ -85,6 +85,18 @@ class DatabaseConnector:
         with open('local_db_creds.yaml', mode='r') as file:
             local_db_creds = yaml.safe_load(file)
         return local_db_creds
+    
+    def read_store_api_creds(self):
+        """
+        This function open and read the credentials yaml file and return a dictionary of the end point and API key for store table.
+        For this to work, PyYAML have to be installed via pip install PyYAML
+        Args: 
+            
+        """
+        import yaml
+        with open('store_api_creds.yaml', mode='r') as file:
+            local_db_creds = yaml.safe_load(file)
+        return local_db_creds
         
 #==================Below are used for test functions==== Remove after code completed
 # table_list = DatabaseConnector().list_db_tables()
