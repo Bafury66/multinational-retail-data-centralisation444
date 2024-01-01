@@ -1,5 +1,4 @@
-import data_extraction, database_utils, data_cleaning
-import pandas as pd
+import data_cleaning, data_extraction, database_utils, pandas as pd
 clean_connector = data_cleaning.DataCleaning()
 extraction_connector = data_extraction.DataExtractor()
 utils_connector = database_utils.DatabaseConnector()
@@ -80,7 +79,6 @@ def grab_store_details_with_api():
     utils_connector.upload_to_db(cleaned_store_details, "dim_store_details")
 
 def grab_product_details_from_csv():     
-    #print(f'\nProcessing product detail table, pleae wait...')
     s3_address = "s3://data-handling-public/products.csv"
     product_raw_data = extraction_connector.extract_from_s3(s3_address)
     product_weight_cleaned = clean_connector.convert_product_weights(product_raw_data)
@@ -88,7 +86,6 @@ def grab_product_details_from_csv():
     utils_connector.upload_to_db(cleaned_product_details, "dim_products")
     
 def grab_date_details_from_json():
-    #print(f'\nProcessing date detail table, pleae wait...')
     s3url_address = "https://data-handling-public.s3.eu-west-1.amazonaws.com/date_details.json"
     date_raw_data = extraction_connector.extract_from_s3_url(s3url_address)
     cleaned_date_details = clean_connector.clean_events_time_data(date_raw_data)
