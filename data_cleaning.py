@@ -144,11 +144,6 @@ class DataCleaning:
         removed_options = ["Still_avaliable", "Removed"]
         product_df = product_df.drop(product_df[~product_df.removed.isin(removed_options)].index)
         product_df[["currency", "price"]] = product_df["product_price"].str.extract('(£|$|€)(\d+\.\d\d)', expand=True)
-        # currency_column = product_df.pop("currency")
-        # product_df.insert(3, "currency", currency_column)  
-        # product_df["product_price"] = product_df["price"]
-        # product_df = product_df.drop(["price"], axis=1)
-        # product_df["product_price"] = round(product_df["product_price"].astype('float'),2)
         product_df= product_df.drop(product_df[product_df['uuid'].str.len() != uuid_length].index)
         product_df['date_added'] = pd.to_datetime(product_df['date_added'], format = 'mixed', errors='coerce')
         product_df = product_df.drop(product_df[product_df["EAN"].str.contains('[^0-9]')].index)
