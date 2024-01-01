@@ -74,7 +74,6 @@ class DatabaseConnector:
             table_name - the name of table shown on database.
         Returns: None 
         '''
-        from sklearn.datasets import load_iris
         from sqlalchemy import create_engine
         local_db_creds = DatabaseConnector.read_local_db_creds()
         database_type = local_db_creds['LDS_DATABASE_TYPE']
