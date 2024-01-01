@@ -2,32 +2,43 @@ class DatabaseConnector:
     '''
     This class is used to connect with and upload data to the database.
     
-    Attributes:
+    Attributes: All methods used here are static method.
 
     '''
-    def __init__(self):
-         self.db_creds = self.read_db_creds()
-        
-    def read_db_creds(self):
-        """
-        This function open and read the credentials yaml file and return a dictionary of the credentials.
-        For this to work, PyYAML have to be installed via pip install PyYAML
+    # def __init__(self):
+    #     #self.db_creds = self.read_db_creds()
+    #     pass
+    
+    @staticmethod  
+    def read_db_creds():
+        '''
+        This function opens and reads the credentials yaml file in the naming format of "db_creds.yaml" and return a dictionary of the credentials.
+        For this to work, PyYAML have to be installed via pip install PyYAML on the terminal.
+
         Args: 
-            
-        """
+            None
+
+        Returns:
+            db_creds: a YAML object contains the credentials for AWS RDS database
+        '''   
         import yaml
         with open('db_creds.yaml', mode='r') as file:
             db_creds = yaml.safe_load(file)
         return db_creds
     
-    def init_db_engine(self):
-        """
-        This function read the credentials from the return of read_db_creds 
-        and initialise and return an sqlalchemy database engine.
-        This require (pip install sqlalchemy bforehand)
+    @staticmethod  
+    def init_db_engine():
+        '''
+        This function read the credentials from the return of read_db_creds, and initialise then return an sqlalchemy database engine.
+        For this to work, it requires (pip install sqlalchemy bforehand).
+
         Args: 
-        """
-        db_creds = self.read_db_creds()
+            None, assuming this is only used to create specific AWS RDS database engine.
+
+        Returns:
+            engine: A sqlalchemy database engine used to open a connection between local machine and AWS RDS database.
+        '''   
+        db_creds = DatabaseConnector.read_db_creds()
         from sqlalchemy import create_engine
         database_type = 'postgresql'
         dbapi = 'psycopg2'
@@ -39,29 +50,51 @@ class DatabaseConnector:
         engine = create_engine(f"{database_type}+{dbapi}://{user}:{password}@{host}:{port}/{database}")
         return engine
 
-    def list_db_tables(self):
-        """
-        This function use the database engine to list all the tables in the database.
+    @staticmethod  
+    def list_db_tables():
+        '''
+        This function use thes database engine to connect to database then list all the tables available on the database.
+        
         Args: 
-        """
-        engine = self.init_db_engine()
+            None, assuming this is only used to create specific AWS RDS database engine.
+
+        Returns:
+            table_list: A list of all the tables available on the AWS RDS database.
+        '''   
+        engine = DatabaseConnector.init_db_engine()
         from sqlalchemy import inspect
         engine.execution_options(isolation_level='AUTOCOMMIT').connect()
         inspector = inspect(engine)
-        return inspector.get_table_names()
+        table_list = inspector.get_table_names() 
+        return table_list
 
-    def pdf_link(self):
-        """
-        This function ask for an link for PDF source.
-        Args: 
-        """
+    @staticmethod
+    def pdf_link():
+        '''
+        This function ask for a link from user for PDF source.
+        
+        Args:
+            None
+            
+        Returns: pdf_link ready to be used to grab data. 
+        '''
         pdf_link = input("Please enter PDF link..: ")
         return pdf_link
     
-    def upload_to_db(self, data_frame, table_name):
+    @staticmethod
+    def upload_to_db(data_frame, table_name):
+        '''
+        This function is used to upload the dataframe to local database.
+        
+        Args:
+            data_frame - the data frame ready to upload.
+            table_name - the name of table shown on database.
+            
+        Returns: None 
+        '''
         from sqlalchemy import create_engine
         from sklearn.datasets import load_iris
-        local_db_creds = self.read_local_db_creds()
+        local_db_creds = DatabaseConnector.read_local_db_creds()
         database_type = local_db_creds['LDS_DATABASE_TYPE']
         dbapi = local_db_creds['LDS_DBAPI']
         host = local_db_creds['LDS_HOST']
@@ -72,31 +105,48 @@ class DatabaseConnector:
         engine = create_engine(f"{database_type}+{dbapi}://{user}:{password}@{host}:{port}/{database}")
         engine.execution_options(isolation_level='AUTOCOMMIT').connect()
         data_frame.to_sql(table_name, engine, if_exists='replace')
-        #engine.close()
+        print(f'\n"{table_name}" Table Uploaded/Replaced Successfully..\n')
+        
+    @staticmethod
+    def read_local_db_creds():
+        '''
+        This function opens and reads the credentials yaml file in the naming format of "local_db_creds.yaml" and return a dictionary of the credentials.
+        Credentials are login details for local database.
+        For this to work, PyYAML have to be installed via pip install PyYAML on the terminal.
 
-    def read_local_db_creds(self):
-        """
-        This function open and read the credentials yaml file and return a dictionary of the credentials for local DB.
-        For this to work, PyYAML have to be installed via pip install PyYAML
         Args: 
-            
-        """
+            None
+
+        Returns:
+            local_db_creds: a YAML object contains the credentials for AWS RDS database
+        '''   
         import yaml
         with open('local_db_creds.yaml', mode='r') as file:
             local_db_creds = yaml.safe_load(file)
         return local_db_creds
     
-    def read_store_api_creds(self):
-        """
-        This function open and read the credentials yaml file and return a dictionary of the end point and API key for store table.
-        For this to work, PyYAML have to be installed via pip install PyYAML
+    @staticmethod
+    def read_store_api_creds():
+        '''
+        This function open and read the credentials yaml file in the naming format of "store_api_creds.yaml" and
+        return a dictionary of the end point and API key for accessing store table.
+        Credentials are API headers with key and value pair, store number end point and retrieve store data paths.
+        For this to work, PyYAML have to be installed via pip install PyYAML on the terminal.
+
         Args: 
-            
-        """
+            None
+
+        Returns:
+            api_creds: a YAML object contains the credentials for AWS database
+        '''  
         import yaml
         with open('store_api_creds.yaml', mode='r') as file:
-            local_db_creds = yaml.safe_load(file)
-        return local_db_creds
+            api_creds = yaml.safe_load(file)
+        headers = api_creds["headers"][0]
+        store_number_endpoint = api_creds["store_number_endpoint"]
+        retrieve_store_endpoint = api_creds["retrieve_store_endpoint"]
+        return headers, store_number_endpoint, retrieve_store_endpoint
+   
         
 #==================Below are used for test functions==== Remove after code completed
 # table_list = DatabaseConnector().list_db_tables()

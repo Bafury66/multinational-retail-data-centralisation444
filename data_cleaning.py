@@ -6,33 +6,44 @@
 
 class DataCleaning:
     '''
-    This class is used to clean data from each of the data sources.
+    This class is used to clean dataframe gathered from each of the data sources.
     
-    Attributes:
+    Attributes: All methods used here are static method.
 
     '''
-    def __init__(self):
+    #def __init__(self):
         # import database_utils
         # util_connector = database_utils.DatabaseConnector()
         # self.engine = util_connector.init_db_engine()
         # self.source_table = util_connector.list_db_tables()
         #self.__init__
-        pass
-    
-    def clean_user_data(self, user_data): ##==== This function needs to be changed, don't need line 22-27, function take user data frame as argument ===
+        #pass
+
+    @staticmethod    
+    def clean_user_data(user_data): ##==== This function needs to be changed, don't need line 22-27, function take user data frame as argument ===
+        '''
+        This function is used to clean the user data frame. This function assumes the data format downloaded is always the same,
+        i.e. column names do not change from time to time.
+
+        Args:
+            user_data: The user data from data source in the form of pandas dataframe.
+
+        Returns:
+            user_data: A data cleaned dataframe ready to upload to local database.
+        '''        
         import pandas as pd
-        import database_utils , data_extraction
-        util_connector = database_utils.DatabaseConnector()
-        source_table = util_connector.list_db_tables()
-        engine = util_connector.init_db_engine()
-        extraction_connector = data_extraction.DataExtractor(engine, source_table)
+        # import database_utils , data_extraction
+        # util_connector = database_utils.DatabaseConnector()
+        # source_table = util_connector.list_db_tables()
+        # engine = util_connector.init_db_engine()
+        # extraction_connector = data_extraction.DataExtractor(engine, source_table)
 
         not_allow_char_string = "[!?*&1234567890]"
         allowed_country_list = ["United Kingdom", "Germany", "United States"]
         country_and_code_mapping = {"Germany" : "DE" , "United Kingdom" : "GB" , "United States" : "US"}
         code_and_country_mapping = {"DE" : "Germany" , "GB" : "United Kingdom" , "US" : "United States"}
         user_uui_length = 36
-        user_data = extraction_connector.read_rds_table()
+        #user_data = extraction_connector.read_rds_table()
         
         #Convert data frame to string type
         user_data = user_data.astype("string")
@@ -81,8 +92,19 @@ class DataCleaning:
         #check if email duplicate
         #check if address begin with 0
         return user_data
+
     @staticmethod
     def clean_card_data(card_details):##==== This function needs to be changed, don't need line 85-91, function take card data frame as argument ===
+        '''
+        This function is used to clean the card data frame. This function assumes the data format downloaded is always the same,
+        i.e. column names do not change from time to time.
+
+        Args:
+            card_details: The card data from data source in the form of pandas dataframe.
+
+        Returns:
+            card_details: A data cleaned dataframe ready to upload to local database.
+        '''   
         import pandas as pd
         # import database_utils , data_extraction
         # pdf_link = "https://data-handling-public.s3.eu-west-1.amazonaws.com/card_details.pdf"
@@ -104,7 +126,18 @@ class DataCleaning:
         card_details = card_details.dropna()
         return card_details
     
+    @staticmethod
     def clean_store_data(store_df):##==== This function needs to be changed, don't need line 106-115, function take store data frame as argument ===
+        '''
+        This function is used to clean the store details data frame. This function assumes the data format downloaded is always the same,
+        i.e. column names do not change from time to time.
+
+        Args:
+            store_df: The store data from data source in the form of pandas dataframe.
+
+        Returns:
+            store_details: A data cleaned dataframe ready to upload to local database.
+        '''   
         import pandas as pd
         # import data_extraction, database_utils
         # util_connector = database_utils.DatabaseConnector()
@@ -157,13 +190,26 @@ class DataCleaning:
         store_details = store_details.drop(store_details[~store_details.continent.isin(continent_list)].index)
         #remove lat column and index column
         #store_details = store_details.drop('lat', axis=1)
-        store_details = store_details.drop("index", axis=1) 
+        try:
+            store_details = store_details.drop("index", axis=1)
+        except KeyError:
+            pass
         # #drop all NULL values
         #store_details = store_details.dropna() # can't use this, this wipe out everything
 
         return store_details
     
-    def convert_product_weights(self, product_df):
+    @staticmethod  
+    def convert_product_weights(product_df):
+        '''
+        This function is only used to convert the product weights from "g"(gram) OR "ml"(milliliter) to "kg"(Kilogram) via relevant calculations.
+        
+        Args:
+            product_df: The product data from data source in the form of pandas dataframe.
+
+        Returns:
+            product_df: A product dataframe with unify weight unit (kg) ready to be further processed or cleaned.
+        '''   
         import pandas as pd
         product_df[["value", "weight_unit"]] = product_df["weight"].str.extract('(\d+\.\d+|\d+|\d+\s[x]\s\d+)(kg|g|ml|oz)', expand=True)
         product_df[["item_numbers", "item_weight"]] = product_df["value"].str.split(' x ', expand=True)
@@ -180,7 +226,18 @@ class DataCleaning:
         product_df = product_df.drop(["value", "item_numbers", "item_weight", "total_weight"], axis=1)
         return product_df
     
-    def clean_products_data(self, product_df):
+    @staticmethod
+    def clean_products_data(product_df):
+        '''
+        This function is used to clean the product details data frame. This function assumes the data format downloaded is always the same,
+        i.e. column names do not change from time to time.
+
+        Args:
+            product_df: The product data from data source in the form of pandas dataframe.
+
+        Returns:
+            product_df: A data cleaned dataframe ready to upload to local database.
+        '''   
         import pandas as pd
         uuid_length = 36
         #Start from removed column, remove rows not in the available list
@@ -192,7 +249,7 @@ class DataCleaning:
         product_df.insert(3, "currency", currency_column)  
         product_df["product_price"] = product_df["price"]
         product_df = product_df.drop(["price"], axis=1)
-        product_df["product_price"] = product_df["product_price"].astype("float", decimal=2)
+        product_df["product_price"] = round(product_df["product_price"].astype('float'),2)
         #check length of product uuid and drop all those in wrong format
         product_df= product_df.drop(product_df[product_df['uuid'].str.len() != uuid_length].index)
         #Convert date_added to datetime64
@@ -205,28 +262,38 @@ class DataCleaning:
         product_df.drop(product_df.iloc[:,:1], inplace=True, axis=1)     
         return product_df
 
-    def clean_orders_data(self, order_df):
+    @staticmethod
+    def clean_orders_data(order_df):
+        '''
+        This function is used to clean the order details data frame. This function assumes the data format downloaded is always the same,
+        i.e. column names do not change from time to time.
+
+        Args:
+            order_df: The order data from data source in the form of pandas dataframe.
+
+        Returns:
+            order_df: A data cleaned dataframe ready to upload to local database.
+        '''  
         import pandas as pd
         order_df = order_df.drop(columns=["first_name", "last_name", "1"])
         return order_df
+    
+    @staticmethod
+    def clean_events_time_data(date_data_df):
+        '''
+        This function is used to clean the date details data frame. This function assumes the data format downloaded is always the same,
+        i.e. column names do not change from time to time.
 
-    def clean_events_time_data(self, date_data_df):
+        Args:
+            date_data_df: The date data from data source in the form of pandas dataframe.
+
+        Returns:
+            date_data_df: A data cleaned dataframe ready to upload to local database.
+        '''  
         import pandas as pd
         allowed_options = ["Evening", "Morning", "Midday", "Late_Hours"]
         date_data_df = date_data_df.drop(date_data_df[~date_data_df.time_period.isin(allowed_options)].index)        
         date_data_df["event_date"] = date_data_df["year"].astype(str)+"-"+ date_data_df["month"].astype(str)+"-"+ date_data_df["day"].astype(str) +" "+ date_data_df["timestamp"].astype(str)
         date_data_df["event_date"] = pd.to_datetime(date_data_df['event_date'], format='%Y-%m-%d %H:%M:%S')
         return date_data_df
-        
-#=============== for test only
-#result = DataCleaning.clean_user_data()
-#result.info()
-# result.to_csv('data_clean_v1.csv', index=False)
-
-#result = DataCleaning.clean_card_data()
-# DataCleaning.clean_card_data()
-# print(result)
-# result.to_csv('data_clean_v1.csv', index=False)
-
-#result = DataCleaning.clean_store_data()
-#result.to_csv('store_clean_v1.csv', index=False)
+    

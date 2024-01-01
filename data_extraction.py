@@ -9,34 +9,86 @@ class DataExtractor:
     This class work as a utility class enables methods that help extract data from different data sources.
     
     Attributes:
-
     '''
-    def __init__(self):
-         import database_utils
-         util_connector = database_utils.DatabaseConnector()
-         self.engine = util_connector.init_db_engine()
-         self.source_table = util_connector.list_db_tables()
+    # def __init__(self):
+    #      '''
+    #      initiate self.engine and self.source_table ready to use
+    #      '''
+    #      pass
+    #      import database_utils
+        #  util_connector = database_utils.DatabaseConnector()
+        #  self.engine = util_connector.init_db_engine()
+        #  self.source_table = util_connector.list_db_tables()
+         
          #self.pdf_link = pdf_link
         
-    def read_rds_table(self, type):
+    # def read_rds_table(self, type):
+    #     '''
+    #     This function extract the database table to a pandas DataFrame.
+
+    #     Args: 
+
+    #     Returns:
+    #         db_creds: a YAML object contains the credentials for AWS RDS database
+    #     '''  
+    #     import pandas as pd
+    #     for table in self.source_table:
+    #         if type in table:
+    #             table_name = table
+    #             data = pd.read_sql_table(table_name, self.engine).set_index('index')
+    #             return data
+
+    @staticmethod
+    def read_rds_table(util_connector, table_name):
+        '''
+        This function extract the database table to a pandas DataFrame.
+
+        Args: 
+            util_connector:this is the DatabaseConnector class from database_utils module.
+            table_name: table name to be extracted from the databse.
+
+        Returns:
+            db_creds: a YAML object contains the credentials for AWS RDS database
+        '''  
         import pandas as pd
-        for table in self.source_table:
-            if type in table:
-                table_name = table
-                data = pd.read_sql_table(table_name, self.engine).set_index('index')
-                return data
-        
-    def retrieve_pdf_data(self, pdf_link): # to allow this method, tabula-py Python package has to be installed
+        engine = util_connector.init_db_engine()
+        data = pd.read_sql_table(table_name, engine).set_index('index')
+        return data
+    
+    @staticmethod        
+    def retrieve_pdf_data(pdf_link):
+        '''
+        This function reads an url link of a pdf file and return a pandas DataFrame.
+        To allow this method, tabula-py Python package has to be installed
+
+        Args: 
+            pdf_link: url link of a pdf file.
+
+        Returns:
+            pdf_df: a pandas DataFrame
+        '''  
         import tabula
-        pdf_df = tabula.read_pdf(
+        pdf_raw_data = tabula.read_pdf(
             pdf_link,
             pages="all",
             lattice=True,
             multiple_tables=False,
-        )                
-        return pdf_df[0]
+        )
+        pdf_df = pdf_raw_data[0]              
+        return pdf_df
     
-    def list_number_of_stores(self, store_number_endpoint, headers): #retrive number of stores to extract
+    @staticmethod
+    def list_number_of_stores(store_number_endpoint, headers): #retrive number of stores to extract
+        '''
+        This function retrieves and return the total number of stores available on the cloud through the use of API.
+    
+        Args: 
+            store_number_endpoint: store number endpoint which holds the total number of stores.
+            headers: headers with key and value pair info to be used during api connection
+
+        Returns:
+            number_of_store: Number of stores
+        '''          
         import requests
         response = requests.get(store_number_endpoint, headers= headers)
         if response.status_code == 200:
@@ -46,10 +98,21 @@ class DataExtractor:
         else:
             print('Not getting correct response from server..')
             print(f"Response Text: {response.text}")
+            
+    @staticmethod
+    def retrieve_stores_data(retrieve_store_endpoint, headers):
+        '''
+        This function extracts all the stores from the API and save and return a pandas DataFrame.
+    
+        Args: 
+            retrieve_store_endpoint: endpoint path where store details can be accessed.
+            headers: headers with key and value pair info to be used during api connection
 
-    def retrieve_stores_data(self, retrieve_store_endpoint, headers):
+        Returns:
+            store_df: a pandas DataFrame contains all the details of the stores availav.
+        '''         
         import requests, pandas as pd
-        
+        from tqdm import tqdm
         string_length = len(retrieve_store_endpoint)
         for char in range(string_length-1, 0, -1):
             if retrieve_store_endpoint[char] == "/":
@@ -63,8 +126,8 @@ class DataExtractor:
         retrieve_store_endpoint_root = retrieve_store_endpoint[0:last_slash_location+1]
         
         store_data_list=[]
-        
-        for store in range(0, store_number_int, 1):
+        for store in tqdm(range(0, store_number_int, 1), desc="Retrieving Data in Progress..", total = store_number_int):
+        #for store in tqdm(store_number_str):
             retrieve_store_endpoint_number = str(store)
             end_point_url = retrieve_store_endpoint_root + retrieve_store_endpoint_number
             
@@ -79,7 +142,18 @@ class DataExtractor:
         store_df = pd.DataFrame(store_data_list)
         return store_df
     
-    def extract_from_s3(self, s3_address):
+    @staticmethod
+    def extract_from_s3(s3_address):
+        '''
+        This function uses AWS SDK commands to read and extract data from the csv file held on Amazon S3 cloud storage 
+        and returns a pandas DataFrame of product details. This requires AWS SDK for Python (Boto3)
+    
+        Args: 
+            s3_address: The S3 address for the products data which is s3://data-handling-public/products.csv .
+
+        Returns:
+            product_data: a pandas DataFrame contains all the details of the products.
+        ''' 
         import boto3, pandas as pd
         new_string = s3_address.replace('s3://', '')
         bucket_end_position = new_string.rindex('/')
@@ -91,7 +165,8 @@ class DataExtractor:
         product_data.head()
         return product_data
     
-    def extract_from_s3_url(self, s3url_address):
+    @staticmethod
+    def extract_from_s3_url(s3url_address):
         import boto3, pandas as pd
         new_string = s3url_address.replace('https://', '')
         bucket_end_position = new_string.rindex('.s3')
